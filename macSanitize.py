@@ -43,16 +43,26 @@ t_space = r'^.*[^ ]( +)$'
 re_t_space = re.compile(t_space)
 uglies = r'(["|\\:*?<>]+)'
 re_uglies = re.compile(uglies)
+filename = r'^(.*[^.])\.(\w{1,6})$'
+re_filename = re.compile(filename)
 
 
 def fileRename(base_path, fob_list, sn, dn):
 
+
+	f_match = re_filename.fullmatch(dn)
+	try:
+		dn_lst = f_match.groups()
+	except AttributeError:
+		dn_lst = [dn, ]
+
 	count = 1
-	dn_new = dn
+	dn_lst_new = list(dn_lst)
 
 	while True:
+		dn_new = '.'.join(dn_lst_new)
 		if dn_new in fob_list:
-			dn_new = dn + str(count)
+			dn_lst_new[0] = dn_lst[0] + str(count)
 			count += 1
 		else:
 			break
@@ -65,7 +75,7 @@ def fileRename(base_path, fob_list, sn, dn):
 	if not dryrun:
 		if not os.path.exists(fsn):
 			ogger.error("unable to rename file '{0}' to '{1}', as source doesn't extists".format(fsn, fdn))
-		elif os.path.exists(fdn_new):
+		elif os.path.exists(fdn):
 			logger.error("unable to rename file '{0}' to '{1}', as destination already extists".format(fsn, fdn))
 		else:
 			os.rename(fsn, fdn)
