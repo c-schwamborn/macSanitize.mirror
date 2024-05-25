@@ -28,7 +28,8 @@ dryrun = True
 
 leading_space = False
 trailing_space = False
-remove_uglies = True
+extension_space = True
+remove_uglies = False
 
 #search_path = "/home/cs/projects/macSanitize/pathrename"
 #search_path = "/home/cs/projects/macSanitize/sonderzeichen"
@@ -43,7 +44,7 @@ t_space = r'^.*[^ ]( +)$'
 re_t_space = re.compile(t_space)
 uglies = r'(["|\\:*?<>]+)'
 re_uglies = re.compile(uglies)
-filename = r'^(.*[^.])\.(\w{1,6})$'
+filename = r'^(.*[^.])\.(\s*\w{1,6})$'
 re_filename = re.compile(filename)
 
 
@@ -131,6 +132,38 @@ if __name__ == '__main__':
 					logger.debug("space lengh: {0}".format(sl))
 					dn_new = fileRename(fob[0], fob[2], sn, dn)
 					fob[2][fn] = dn_new
+
+			# remove extension spaces
+			if extension_space:
+
+				f_match = re_filename.fullmatch(fob[2][fn])
+
+				if f_match:
+					sn_lst = f_match.groups()
+
+					# remove trailing spaces in file name base before extension
+					f_match2 = re_t_space.fullmatch(sn_lst[0])
+					if f_match2:
+						sl = len(f_match2.groups()[0])
+						sn = fob[2][fn]
+						fsn = os.path.join(fob[0], sn)
+						dn = '.'.join( [sn_lst[0][:-sl], sn_lst[1],] )
+						logger.debug("trailing base name space in: '{0}'".format(fsn))
+						logger.debug("space lengh: {0}".format(sl))
+						dn_new = fileRename(fob[0], fob[2], sn, dn)
+						fob[2][fn] = dn_new
+
+					# remove spaces leading the extension
+					f_match2 = re_l_space.fullmatch(sn_lst[1])
+					if f_match2:
+						sl = len(f_match2.groups()[0])
+						sn = fob[2][fn]
+						fsn = os.path.join(fob[0], sn)
+						dn = '.'.join( [sn_lst[0], sn_lst[1][sl:],] )
+						logger.debug("leading extension space in: '{0}'".format(fsn))
+						logger.debug("space lengh: {0}".format(sl))
+						dn_new = fileRename(fob[0], fob[2], sn, dn)
+						fob[2][fn] = dn_new
 
 			# remove ugly characters in files
 			if remove_uglies:
