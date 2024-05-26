@@ -197,7 +197,7 @@ logger.setLevel(logging.DEBUG)
 # add console logger
 if not args.quiet:
 	c_handler = logging.StreamHandler()
-	c_formatter = logging.Formatter('%(levelname)s - %(message)s')
+	c_formatter = logging.Formatter('[%(levelname)s] %(message)s')
 	c_handler.setFormatter(c_formatter)
 	if args.verbose:
 		c_handler.setLevel(logging.DEBUG)
@@ -208,8 +208,7 @@ if not args.quiet:
 # log to file if logfile parameter is given
 if args.logfile:
 	f_handler = ownedFileHandler(args.logfile, mode='w', encoding=log_encoding)
-	f_formatter = logging.Formatter('%(asctime)s - %(levelname)s ' +
-		'[%(module)s/%(funcName)s/%(lineno)d] %(message)s')
+	f_formatter = logging.Formatter('[%(levelname)s] %(message)s')
 	f_handler.setFormatter(f_formatter)
 	if args.verbose:
 		f_handler.setLevel(logging.DEBUG)
