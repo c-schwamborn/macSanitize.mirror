@@ -136,7 +136,7 @@ parser.add_argument(
 	dest = 'dryrun',
 	action = 'store_true',
 	required = False,
-	default = True,
+	default = False,
 	help = 'perform a dry run without actually changing anything',
 	)
 
