@@ -5,6 +5,7 @@
 import os
 import re
 import logging
+from copy import deepcopy 
 
 ##
 # from shell find experiments:
@@ -26,8 +27,8 @@ import logging
 verbose = True
 dryrun = True
 
-process_files = True
-process_directories = False
+process_files = False
+process_directories = True
 
 leading_space = True
 trailing_space = True
@@ -71,7 +72,7 @@ def doFiles(fob):
 
 	# processing files
 	bpath = fob[0]
-	for fn in range(0, len(fob[2]) - 1):
+	for fn in range(0, len(fob[2])):
 
 		sn = fob[2][fn]
 
@@ -130,6 +131,53 @@ def doFiles(fob):
 				fileRename(fob, fn, dn)
 
 
+def doDirectories(fob):
+
+	# processing directories
+	bpath = fob[0]
+	if dryrun:
+		fob_a = deepcopy(fob)
+	else:
+		fod_a = fob
+
+	for fn in range(0, len(fob[1])):
+
+		sn = fob[1][fn]
+
+		if sn in folder_skiplist:
+			logger.debug("skipping directory: '{0}'".format(os.path.join(bpath, sn)))
+			del fob[1][fn]
+			continue
+
+		# remove leading spaces in directories
+		if leading_space:
+			f_match = re_l_space.fullmatch(sn)
+			if f_match:
+				sl = len(f_match.groups()[0])
+				dn = sn[sl:]
+				logger.debug("leading space in directory: '{0}'".format(os.path.join(bpath, sn)))
+				logger.debug("space lengh: {0}".format(sl))
+				fileRename(fob_a, fn, dn, False)
+
+		# remove trailing spaces in files
+		if trailing_space:
+			f_match = re_t_space.fullmatch(sn)
+			if f_match:
+				sl = len(f_match.groups()[0])
+				dn = sn[:-sl]
+				logger.debug("trailing space in directory: '{0}'".format(os.path.join(bpath, sn)))
+				logger.debug("space lengh: {0}".format(sl))
+				fileRename(fob_a, fn, dn, False)
+
+		# remove ugly characters in files
+		if remove_uglies:
+			f_match = re_uglies.search(sn)
+			if f_match:
+				dn = re_uglies.sub('_', sn)
+				logger.debug("ugly character in directory: '{0}'".format(os.path.join(bpath, sn)))
+				fileRename(fob_a, fn, dn, False)
+
+
 def fileRename(fob, fn, dn, file=True):
 
 	lobj = 1
@@ -164,7 +212,7 @@ def fileRename(fob, fn, dn, file=True):
 
 	fsn = os.path.join(bpath, sn)
 	fdn = os.path.join(bpath, dn_new)
-	logger.info("renaming: '{0}' to '{1}'".format(fsn, fdn))
+	logger.info("renaming {0} '{1}' to '{2}'".format(t, fsn, fdn))
 
 	ren = True
 	if not dryrun:
@@ -180,6 +228,7 @@ def fileRename(fob, fn, dn, file=True):
 			except:
 				logger.error("failed to rename {0} '{1}' to '{2}'")
 				ren = False
+
 	if ren:
 		fob[lobj][fn] = dn_new
 
@@ -191,5 +240,8 @@ if __name__ == '__main__':
 
 		if process_files:
 			doFiles(fob)
+
+		if process_directories:
+			doDirectories(fob)
 
 
