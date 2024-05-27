@@ -308,19 +308,18 @@ def doNameList(fob, skiplist, file=True):
 
 def fileRename(fob, fn, dn, file=True):
 
-	lobj = 1
-	if file: lobj = 2
-
-	fob_list = fob[lobj]
-	sn = fob_list[fn]
-	bpath = fob[0]
-
-	if lobj == 2:
+	if file:
+		ln = 2
 		f_match = re_filename.fullmatch(dn)
 		t = 'file'
 	else:
+		ln = 1
 		f_match = None
 		t = 'directory'
+
+	fob_list = fob[ln]
+	sn = fob_list[fn]
+	bpath = fob[0]
 
 	try:
 		dn_lst = f_match.groups()
@@ -358,7 +357,7 @@ def fileRename(fob, fn, dn, file=True):
 				ren = False
 
 	if ren:
-		fob[lobj][fn] = dn_new
+		fob[ln][fn] = dn_new
 
 
 if __name__ == '__main__':
