@@ -180,6 +180,8 @@ folder_skiplist = (
 	'.AppleDouble',
 )
 
+file_skiplist = ()
+
 # reqular expressions
 l_space = r'^(\s+).*$'
 t_space = r'^.*[^\s](\s+)$'
@@ -219,122 +221,99 @@ if args.logfile:
 
 
 
-def doFiles(fob):
+def doNameList(fob, skiplist, file=True):
 
-	# processing files
 	bpath = fob[0]
-	for fn in range(0, len(fob[2])):
 
-		# remove leading spaces in files
-		if args.leading_space:
-			sn = fob[2][fn]
-			f_match = re_l_space.fullmatch(sn)
-			if f_match:
-				sl = len(f_match.groups()[0])
-				dn = sn[sl:]
-				logger.debug("leading space in file: '{0}'".format(os.path.join(bpath, sn)))
-				logger.debug("space lengh: {0}".format(sl))
-				fileRename(fob, fn, dn)
-
-		# remove trailing spaces in files
-		if args.trailing_space:
-			sn = fob[2][fn]
-			f_match = re_t_space.fullmatch(sn)
-			if f_match:
-				sl = len(f_match.groups()[0])
-				dn = sn[:-sl]
-				logger.debug("trailing space in file: '{0}'".format(os.path.join(bpath, sn)))
-				logger.debug("space lengh: {0}".format(sl))
-				fileRename(fob, fn, dn)
-
-		# remove extension spaces
-		if args.ext_space:
-
-			sn = fob[2][fn]
-			f_match = re_filename.fullmatch(sn)
-
-			if f_match:
-				# remove trailing spaces in file name base before extension
-				sn_lst = f_match.groups()
-				f_match2 = re_t_space.fullmatch(sn_lst[0])
-				if f_match2:
-					sl = len(f_match2.groups()[0])
-					dn = '.'.join( [sn_lst[0][:-sl], sn_lst[1],] )
-					logger.debug("trailing base name space in file: '{0}'".format(os.path.join(bpath, sn)))
-					logger.debug("space lengh: {0}".format(sl))
-					fileRename(fob, fn, dn)
-
-			sn = fob[2][fn]
-			f_match = re_filename.fullmatch(sn)
-
-			if f_match:
-				# remove spaces leading the extension
-				sn_lst = f_match.groups()
-				f_match2 = re_l_space.fullmatch(sn_lst[1])
-				if f_match2:
-					sl = len(f_match2.groups()[0])
-					dn = '.'.join( [sn_lst[0], sn_lst[1][sl:],] )
-					logger.debug("leading extension space in file: '{0}'".format(os.path.join(bpath, sn)))
-					logger.debug("space lengh: {0}".format(sl))
-					fileRename(fob, fn, dn)
-
-		# remove ugly characters in files
-		if args.remove_uglies:
-			sn = fob[2][fn]
-			f_match = re_uglies.search(sn)
-			if f_match:
-				dn = re_uglies.sub('_', sn)
-				logger.debug("ugly character in file: '{0}'".format(os.path.join(bpath, sn)))
-				fileRename(fob, fn, dn)
-
-
-def doDirectories(fob):
-
-	# processing directories
-	bpath = fob[0]
+	# work on a copy in dryrun, but descend the original
+	# only modify fob list for skipping elements
 	if args.dryrun:
 		fob_a = deepcopy(fob)
 	else:
 		fob_a = fob
 
-	for fn in range(0, len(fob[1])):
+	# processing elements from fob[ln] 1=dirs, 2=files
+	if file:
+		ln = 2
+		t = 'file'
+	else:
+		ln = 1
+		t = 'directory'
 
-		sn = fob_a[1][fn]
-		if sn in folder_skiplist:
-			logger.debug("skipping directory: '{0}'".format(os.path.join(bpath, sn)))
-			del fob[1][fn]
+	for fn in range(0, len(fob[ln])):
+
+		# skip elements in list
+		sn = fob_a[ln][fn]
+		if sn in skiplist:
+			logger.debug("skipping {0}: '{1}'".format(t, os.path.join(bpath, sn)))
+			del fob_a[ln][fn]
+			if args.dryrun: fob[ln][fn]
 			continue
 
-		# remove leading spaces in directories
+		# remove leading spaces
 		if args.leading_space:
-			sn = fob_a[1][fn]
+			sn = fob_a[ln][fn]
 			f_match = re_l_space.fullmatch(sn)
 			if f_match:
 				sl = len(f_match.groups()[0])
 				dn = sn[sl:]
-				logger.debug("leading space in directory: '{0}'".format(os.path.join(bpath, sn)))
+				logger.debug("leading space in {0}: '{1}'".format(t, os.path.join(bpath, sn)))
 				logger.debug("space lengh: {0}".format(sl))
-				fileRename(fob_a, fn, dn, False)
+				fileRename(fob_a, fn, dn, file)
 
-		# remove trailing spaces in files
+		# remove trailing spaces
 		if args.trailing_space:
-			sn = fob_a[1][fn]
+			sn = fob_a[ln][fn]
 			f_match = re_t_space.fullmatch(sn)
 			if f_match:
 				sl = len(f_match.groups()[0])
 				dn = sn[:-sl]
-				logger.debug("trailing space in directory: '{0}'".format(os.path.join(bpath, sn)))
+				logger.debug("trailing space in {0}: '{1}'".format(t, os.path.join(bpath, sn)))
 				logger.debug("space lengh: {0}".format(sl))
-				fileRename(fob_a, fn, dn, False)
+				fileRename(fob_a, fn, dn, file)
 
-		# remove ugly characters in files
+		# remove ugly characters
 		if args.remove_uglies:
-			sn = fob_a[1][fn]
+			sn = fob_a[ln][fn]
 			f_match = re_uglies.search(sn)
 			if f_match:
 				dn = re_uglies.sub('_', sn)
-				logger.debug("ugly character in directory: '{0}'".format(os.path.join(bpath, sn)))
-				fileRename(fob_a, fn, dn, False)
+				logger.debug("ugly character in {0}: '{1}'".format(t, os.path.join(bpath, sn)))
+				fileRename(fob_a, fn, dn, file)
+
+		# continue loop here for directories as they don't have file extensions
+		if not file: continue
+
+		# remove extension spaces
+		if not args.ext_space: continue
+
+		sn = fob_a[ln][fn]
+		f_match = re_filename.fullmatch(sn)
+
+		if f_match:
+			# remove trailing spaces in file base name before the extension dot
+			sn_lst = f_match.groups()
+			f_match2 = re_t_space.fullmatch(sn_lst[0])
+			if f_match2:
+				sl = len(f_match2.groups()[0])
+				dn = '.'.join( [sn_lst[0][:-sl], sn_lst[1],] )
+				logger.debug("trailing base name space in {0}: '{1}'".format(t, os.path.join(bpath, sn)))
+				logger.debug("space lengh: {0}".format(sl))
+				fileRename(fob_a, fn, dn, file)
+
+		sn = fob_a[ln][fn]
+		f_match = re_filename.fullmatch(sn)
+
+		if f_match:
+			# remove spaces leading the extension after the dot
+			sn_lst = f_match.groups()
+			f_match2 = re_l_space.fullmatch(sn_lst[1])
+			if f_match2:
+				sl = len(f_match2.groups()[0])
+				dn = '.'.join( [sn_lst[0], sn_lst[1][sl:],] )
+				logger.debug("leading extension space in {0}: '{1}'".format(t, os.path.join(bpath, sn)))
+				logger.debug("space lengh: {0}".format(sl))
+				fileRename(fob_a, fn, dn, file)
 
 
 def fileRename(fob, fn, dn, file=True):
@@ -398,9 +377,9 @@ if __name__ == '__main__':
 	for fob in os.walk(args.workpath):
 
 		if args.process_files:
-			doFiles(fob)
+			doNameList(fob, file_skiplist)
 
 		if args.process_dirs:
-			doDirectories(fob)
+			doNameList(fob, folder_skiplist, False)
 
 
