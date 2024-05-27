@@ -7,14 +7,14 @@ import sys
 import re
 import logging
 from copy import deepcopy 
+import configparser
 import argparse
 import textwrap
 import pwd, grp
 
 # TODO: implement parameters for:
 # extension_length = 6
-# replacement = '_'
-# uglies = r'(["|\\:*?<>]+)'
+# files_skiplist
 # folder_skiplist
 # FIXME: something doesn't work as expected when called in a shell scrip
 
@@ -24,10 +24,6 @@ l_space = r'^(\s+).*$'
 t_space = r'^.*[^\s](\s+)$'
 uglies = r'(["|\\:*?<>]+)'
 filename = r'^(.*[^.])\.(\s*\w{1,6})$'
-re_l_space = re.compile(l_space)
-re_t_space = re.compile(t_space)
-re_uglies = re.compile(uglies)
-re_filename = re.compile(filename)
 
 
 def ownedFileHandler(filename, mode='a', encoding=None, owner=None):
@@ -164,6 +160,15 @@ def getArgs():
 		)
 
 	parser.add_argument(
+		'-c', '--config',
+		dest = 'configfile',
+		required = False,
+		default = None,
+		metavar = '<config file>',
+		help = 'a config file to use',
+		)
+
+	parser.add_argument(
 		'-p', '--parameters',
 		dest = 'param',
 		action = 'store_true',
@@ -209,6 +214,56 @@ def setupLogging():
 		else:
 			f_handler.setLevel(logging.INFO)
 		logger.addHandler(f_handler)
+
+
+def getConfig(configfile):
+
+	global config
+	global re_l_space
+	global re_t_space
+	global re_uglies
+	global re_filename
+	global replacement
+
+	config = configparser.ConfigParser()
+
+	if configfile and os.path.exists(configfile):
+		logger.info('Reading config file: {0}'.format(configfile))
+		config.read(configfile)
+
+	elif os.path.exists('/etc/macSanitize.ini'):
+		logger.info('Reading config file: {0}'.format(configfile))
+		config.read('/etc/macSanitize.ini')
+
+	# get uglies
+	try:
+		u = config['macSanitize']['uglies']
+
+		try:
+			re_uglies = re.compile('([{0}]+)'.format(u))
+			logger.info('using uglies from config: {0}'.format(u))
+
+		except re.error:
+			logger.error('Failed to compile uglies regex from config')
+			sys.exit(1)
+
+	except KeyError:
+		logger.debug('using default uglies: "|\\:*?<>')
+		re_uglies = re.compile(uglies)
+
+	# get replacement character
+	try:
+		replacement = config['macSanitize']['replacement']
+		logger.info('using replacement character from config: {0}'.format(replacement))
+
+	except KeyError:
+		logger.debug('using default replacement character: _')
+		replacement = '_'
+
+	# compile regular expressions
+	re_l_space = re.compile(l_space)
+	re_t_space = re.compile(t_space)
+	re_filename = re.compile(filename)
 
 
 def doNameList(fob, skiplist, file=True):
@@ -267,7 +322,7 @@ def doNameList(fob, skiplist, file=True):
 			sn = fob_a[ln][fn]
 			f_match = re_uglies.search(sn)
 			if f_match:
-				dn = re_uglies.sub('_', sn)
+				dn = re_uglies.sub(replacement, sn)
 				logger.debug("ugly character in {0}: '{1}'".format(t, os.path.join(bpath, sn)))
 				fileRename(fob_a, fn, dn, file)
 
@@ -375,14 +430,17 @@ if __name__ == '__main__':
 		print("work path does not exist: '{0}'".format(args.workpath))
 		sys.exit(1)
 
+	# setup logging
+	setupLogging()
+
+	# read config file if existent
+	getConfig(args.configfile)
+
 	folder_skiplist = (
 		'.AppleDouble',
 	)
 
 	file_skiplist = ()
-
-	# setup logging
-	setupLogging()
 
 	# walk trough the path structure
 	for fob in os.walk(args.workpath):
