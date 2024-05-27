@@ -233,13 +233,18 @@ def getConfig(configfile):
 
 	config = configparser.ConfigParser()
 
-	if configfile and os.path.exists(configfile):
-		logger.info('Reading config file: {0}'.format(configfile))
-		config.read(configfile)
+	try:
+		if configfile and os.path.exists(configfile):
+			logger.info('Reading config file: {0}'.format(configfile))
+			config.read(configfile)
 
-	elif os.path.exists('/etc/macSanitize.ini'):
-		logger.info('Reading config file: {0}'.format(configfile))
-		config.read('/etc/macSanitize.ini')
+		elif os.path.exists('/etc/macSanitize.ini'):
+			logger.info('Reading config file: {0}'.format(configfile))
+			config.read('/etc/macSanitize.ini')
+
+	except configparser.Error as e:
+		logger.error(e)
+		sys.exit(1)
 
 	# get uglies
 	try:
