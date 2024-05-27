@@ -19,6 +19,17 @@ import pwd, grp
 # FIXME: something doesn't work as expected when called in a shell scrip
 
 
+# reqular expressions
+l_space = r'^(\s+).*$'
+t_space = r'^.*[^\s](\s+)$'
+uglies = r'(["|\\:*?<>]+)'
+filename = r'^(.*[^.])\.(\s*\w{1,6})$'
+re_l_space = re.compile(l_space)
+re_t_space = re.compile(t_space)
+re_uglies = re.compile(uglies)
+re_filename = re.compile(filename)
+
+
 def ownedFileHandler(filename, mode='a', encoding=None, owner=None):
 
 	if owner:
@@ -33,192 +44,171 @@ def ownedFileHandler(filename, mode='a', encoding=None, owner=None):
 	return logging.FileHandler(filename, mode, encoding)
 
 
-# setup command line arguments
-parser = argparse.ArgumentParser(
-	formatter_class=argparse.RawDescriptionHelpFormatter,
-	description=textwrap.dedent('''\
-		macSanitize will help you to remove characters from file or
-		directory names that violates the smb standard and will
-		therfore result in empty directories or being invisible when
-		shared by samba.
-		It can also remove leading/trailing spaces also causing files
-		and directories not as expected.
-		Most common cause for those names, are file and directoy
-		originating on Apple computers, as those system allow anything
-		ugly in file names.
-		Unwanted characters are replaced by an underscore(_) and
-		leading/trailing spaces are simply stripped.
-		To avoid conflicts a number index is appended if the resulting
-		file already exists in the current directory. The index is
-		appended before the file extension. The file extension is
-		detected by a dot(.) followed by 1 to 6 alphanumeric
-		characters.
-		'''),
-	epilog=textwrap.dedent('''\
-		Example:
-			macSanitize.py -f -d -l -t -e -u /path/to/sanitize/
-		'''),
-	)
+def getArgs():
 
-parser.add_argument(
-	'-f', '--files',
-	dest = 'process_files',
-	action = 'store_true',
-	required = False,
-	default = False,
-	help = 'process file objects at the given work directory',
-	)
+	global args
+	parser = argparse.ArgumentParser(
+		formatter_class=argparse.RawDescriptionHelpFormatter,
+		description=textwrap.dedent('''\
+			macSanitize will help you to remove characters from file or
+			directory names that violates the smb standard and will
+			therfore result in empty directories or being invisible when
+			shared by samba.
+			It can also remove leading/trailing spaces also causing files
+			and directories not as expected.
+			Most common cause for those names, are file and directoy
+			originating on Apple computers, as those system allow anything
+			ugly in file names.
+			Unwanted characters are replaced by an underscore(_) and
+			leading/trailing spaces are simply stripped.
+			To avoid conflicts a number index is appended if the resulting
+			file already exists in the current directory. The index is
+			appended before the file extension. The file extension is
+			detected by a dot(.) followed by 1 to 6 alphanumeric
+			characters.
+			'''),
+		epilog=textwrap.dedent('''\
+			Example:
+				macSanitize.py -f -d -l -t -e -u /path/to/sanitize/
+			'''),
+		)
 
-parser.add_argument(
-	'-d', '--directories',
-	dest = 'process_dirs',
-	action = 'store_true',
-	required = False,
-	default = False,
-	help = 'process directory objects at the given work directory',
-	)
+	parser.add_argument(
+		'-f', '--files',
+		dest = 'process_files',
+		action = 'store_true',
+		required = False,
+		default = False,
+		help = 'process file objects at the given work directory',
+		)
 
-parser.add_argument(
-	'-l', '--leading',
-	dest = 'leading_space',
-	action = 'store_true',
-	required = False,
-	default = False,
-	help = 'strip leading spaces from file/directory names',
-	)
+	parser.add_argument(
+		'-d', '--directories',
+		dest = 'process_dirs',
+		action = 'store_true',
+		required = False,
+		default = False,
+		help = 'process directory objects at the given work directory',
+		)
 
-parser.add_argument(
-	'-t', '--trailing',
-	dest = 'trailing_space',
-	action = 'store_true',
-	required = False,
-	default = False,
-	help = 'strip trailing spaces from file/directory names',
-	)
+	parser.add_argument(
+		'-l', '--leading',
+		dest = 'leading_space',
+		action = 'store_true',
+		required = False,
+		default = False,
+		help = 'strip leading spaces from file/directory names',
+		)
 
-parser.add_argument(
-	'-e', '--extension',
-	dest = 'ext_space',
-	action = 'store_true',
-	required = False,
-	default = False,
-	help = 'strip spaces before and after the file extension dot',
-	)
+	parser.add_argument(
+		'-t', '--trailing',
+		dest = 'trailing_space',
+		action = 'store_true',
+		required = False,
+		default = False,
+		help = 'strip trailing spaces from file/directory names',
+		)
 
-parser.add_argument(
-	'-u', '--uglies',
-	dest = 'remove_uglies',
-	action = 'store_true',
-	required = False,
-	default = False,
-	help = 'replace ugly characters with underscores',
-	)
+	parser.add_argument(
+		'-e', '--extension',
+		dest = 'ext_space',
+		action = 'store_true',
+		required = False,
+		default = False,
+		help = 'strip spaces before and after the file extension dot',
+		)
 
-parser.add_argument(
-	'-v', '--verbose',
-	dest = 'verbose',
-	action = 'store_true',
-	required = False,
-	default = False,
-	help = 'get verbose output from the logger',
-	)
+	parser.add_argument(
+		'-u', '--uglies',
+		dest = 'remove_uglies',
+		action = 'store_true',
+		required = False,
+		default = False,
+		help = 'replace ugly characters with underscores',
+		)
 
-parser.add_argument(
-	'-q', '--quiet',
-	dest = 'quiet',
-	action = 'store_true',
-	required = False,
-	default = False,
-	help = 'supress console output except errors',
-	)
+	parser.add_argument(
+		'-v', '--verbose',
+		dest = 'verbose',
+		action = 'store_true',
+		required = False,
+		default = False,
+		help = 'get verbose output from the logger',
+		)
 
-parser.add_argument(
-	'--dryrun',
-	dest = 'dryrun',
-	action = 'store_true',
-	required = False,
-	default = False,
-	help = 'perform a dry run without actually changing anything',
-	)
+	parser.add_argument(
+		'-q', '--quiet',
+		dest = 'quiet',
+		action = 'store_true',
+		required = False,
+		default = False,
+		help = 'supress console output except errors',
+		)
 
-parser.add_argument(
-	'--logfile',
-	dest = 'logfile',
-	required = False,
-	default = None,
-	metavar = '<log file>',
-	help = 'a log file to use',
-	)
+	parser.add_argument(
+		'--dryrun',
+		dest = 'dryrun',
+		action = 'store_true',
+		required = False,
+		default = False,
+		help = 'perform a dry run without actually changing anything',
+		)
 
-parser.add_argument(
-	'-p', '--parameters',
-	dest = 'param',
-	action = 'store_true',
-	required = False,
-	default = False,
-	help = 'dump cli parameters and exit',
-	)
+	parser.add_argument(
+		'--logfile',
+		dest = 'logfile',
+		required = False,
+		default = None,
+		metavar = '<log file>',
+		help = 'a log file to use',
+		)
 
-parser.add_argument(
-	dest = 'workpath',
-	metavar = '<path to process>',
-	help = 'given path will be processed for sanatizing names'
-	)
+	parser.add_argument(
+		'-p', '--parameters',
+		dest = 'param',
+		action = 'store_true',
+		required = False,
+		default = False,
+		help = 'dump cli parameters and exit',
+		)
 
-args = parser.parse_args()
+	parser.add_argument(
+		dest = 'workpath',
+		metavar = '<path to process>',
+		help = 'given path will be processed for sanatizing names'
+		)
 
-if args.param:
-	for name in vars(args):
-		print(name + ' : ' + str(vars(args)[name]))
-	sys.exit(0)
+	args = parser.parse_args()
 
-if not os.path.exists(args.workpath):
-	print("work path does not exist: '{0}'".format(args.workpath))
-	sys.exit(1)
 
-folder_skiplist = (
-	'.AppleDouble',
-)
+def setupLogging():
 
-file_skiplist = ()
+	global logger
+	log_encoding='utf-8'
+	logger = logging.getLogger('macSanitize')
+	logger.setLevel(logging.DEBUG)
 
-# reqular expressions
-l_space = r'^(\s+).*$'
-t_space = r'^.*[^\s](\s+)$'
-uglies = r'(["|\\:*?<>]+)'
-filename = r'^(.*[^.])\.(\s*\w{1,6})$'
-re_l_space = re.compile(l_space)
-re_t_space = re.compile(t_space)
-re_uglies = re.compile(uglies)
-re_filename = re.compile(filename)
+	# add console logger
+	if not args.quiet:
+		c_handler = logging.StreamHandler()
+		c_formatter = logging.Formatter('[%(levelname)s] %(message)s')
+		c_handler.setFormatter(c_formatter)
+		if args.verbose:
+			c_handler.setLevel(logging.DEBUG)
+		else:
+			c_handler.setLevel(logging.INFO)
+		logger.addHandler(c_handler)
 
-# setup logging
-log_encoding='utf-8'
-logger = logging.getLogger('macSanitize')
-logger.setLevel(logging.DEBUG)
-
-# add console logger
-if not args.quiet:
-	c_handler = logging.StreamHandler()
-	c_formatter = logging.Formatter('[%(levelname)s] %(message)s')
-	c_handler.setFormatter(c_formatter)
-	if args.verbose:
-		c_handler.setLevel(logging.DEBUG)
-	else:
-		c_handler.setLevel(logging.INFO)
-	logger.addHandler(c_handler)
-
-# log to file if logfile parameter is given
-if args.logfile:
-	f_handler = ownedFileHandler(args.logfile, mode='w', encoding=log_encoding)
-	f_formatter = logging.Formatter('[%(levelname)s] %(message)s')
-	f_handler.setFormatter(f_formatter)
-	if args.verbose:
-		f_handler.setLevel(logging.DEBUG)
-	else:
-		f_handler.setLevel(logging.INFO)
-	logger.addHandler(f_handler)
-
+	# log to file if logfile parameter is given
+	if args.logfile:
+		f_handler = ownedFileHandler(args.logfile, mode='w', encoding=log_encoding)
+		f_formatter = logging.Formatter('[%(levelname)s] %(message)s')
+		f_handler.setFormatter(f_formatter)
+		if args.verbose:
+			f_handler.setLevel(logging.DEBUG)
+		else:
+			f_handler.setLevel(logging.INFO)
+		logger.addHandler(f_handler)
 
 
 def doNameList(fob, skiplist, file=True):
@@ -373,6 +363,28 @@ def fileRename(fob, fn, dn, file=True):
 
 if __name__ == '__main__':
 
+	# get command line arguments
+	getArgs()
+
+	if args.param:
+		for name in vars(args):
+			print(name + ' : ' + str(vars(args)[name]))
+		sys.exit(0)
+
+	# exit if workpath doesn't exist
+	if not os.path.exists(args.workpath):
+		print("work path does not exist: '{0}'".format(args.workpath))
+		sys.exit(1)
+
+	folder_skiplist = (
+		'.AppleDouble',
+	)
+
+	file_skiplist = ()
+
+	# setup logging
+	setupLogging()
+
 	# walk trough the path structure
 	for fob in os.walk(args.workpath):
 
@@ -381,5 +393,4 @@ if __name__ == '__main__':
 
 		if args.process_dirs:
 			doNameList(fob, folder_skiplist, False)
-
 
