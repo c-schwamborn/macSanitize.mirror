@@ -16,6 +16,7 @@ import pwd, grp
 # replacement = '_'
 # uglies = r'(["|\\:*?<>]+)'
 # folder_skiplist
+# FIXME: something doesn't work as expected when called in a shell scrip
 
 
 def ownedFileHandler(filename, mode='a', encoding=None, owner=None):
@@ -294,11 +295,11 @@ def doDirectories(fob):
 	if args.dryrun:
 		fob_a = deepcopy(fob)
 	else:
-		fod_a = fob
+		fob_a = fob
 
 	for fn in range(0, len(fob[1])):
 
-		sn = fob[1][fn]
+		sn = fob_a[1][fn]
 		if sn in folder_skiplist:
 			logger.debug("skipping directory: '{0}'".format(os.path.join(bpath, sn)))
 			del fob[1][fn]
@@ -306,7 +307,7 @@ def doDirectories(fob):
 
 		# remove leading spaces in directories
 		if args.leading_space:
-			sn = fob[1][fn]
+			sn = fob_a[1][fn]
 			f_match = re_l_space.fullmatch(sn)
 			if f_match:
 				sl = len(f_match.groups()[0])
@@ -317,7 +318,7 @@ def doDirectories(fob):
 
 		# remove trailing spaces in files
 		if args.trailing_space:
-			sn = fob[1][fn]
+			sn = fob_a[1][fn]
 			f_match = re_t_space.fullmatch(sn)
 			if f_match:
 				sl = len(f_match.groups()[0])
@@ -328,7 +329,7 @@ def doDirectories(fob):
 
 		# remove ugly characters in files
 		if args.remove_uglies:
-			sn = fob[1][fn]
+			sn = fob_a[1][fn]
 			f_match = re_uglies.search(sn)
 			if f_match:
 				dn = re_uglies.sub('_', sn)
