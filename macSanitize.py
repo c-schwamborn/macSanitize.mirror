@@ -66,6 +66,12 @@ def getArgs():
 		epilog=textwrap.dedent('''\
 			Example:
 				macSanitize.py -f -d -l -t -e -u /path/to/sanitize/
+
+			Config example (default file: /etc/macSanitize.ini)
+
+				[macSanitize]
+				uglies = "|\\\:*?<>
+				replacement = _
 			'''),
 		)
 
