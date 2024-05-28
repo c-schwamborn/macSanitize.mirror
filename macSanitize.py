@@ -20,7 +20,6 @@ l_space = r'^(\s+).*$'
 t_space = r'^.*[^\s](\s+)$'
 uglies = r'(["|\\:*?<>]+)'
 filename = r'^(.*[^.])\.(\s*\w{1,6})$'
-list_delim = ','
 
 
 def ownedFileHandler(filename, mode='a', encoding=None, owner=None):
@@ -69,11 +68,12 @@ def getArgs():
 				[macSanitize]
 				uglies = "|\\\:*?<>
 				replacement = _
-				folder skiplist = .AppleDouble
+				folder skiplist = ,.AppleDouble
 				file skiplist =
 
-			Shown values are the defaults, list delimiter is a comma(,)
-			certain characters in uglies like a backslash(\\) or square
+			Shown values are the defaults, the list delimiter is the first
+			character found on the value side of the list parameter.
+			Certain characters in uglies like a backslash(\\) or square
 			brackets([]) must be escaped, as they are compiled into a
 			regular expression.
 			'''),
@@ -229,6 +229,10 @@ def setupLogging():
 def getConfigList(config, sect, opt):
 
 	opt_str = config.get(sect, opt)
+	opt_str = opt_str.strip()
+	if not opt_str: return []
+	list_delim = opt_str[0:1]
+	opt_str = opt_str[1:]
 	return [ e.strip() for e in opt_str.split(list_delim) ]
 
 
