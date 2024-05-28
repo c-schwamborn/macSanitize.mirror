@@ -14,16 +14,13 @@ import pwd, grp
 
 # TODO: implement parameters for:
 # extension_length = 6
-# files_skiplist
-# folder_skiplist
-# FIXME: something doesn't work as expected when called in a shell scrip
-
 
 # reqular expressions
 l_space = r'^(\s+).*$'
 t_space = r'^.*[^\s](\s+)$'
 uglies = r'(["|\\:*?<>]+)'
 filename = r'^(.*[^.])\.(\s*\w{1,6})$'
+list_delim = ','
 
 
 def ownedFileHandler(filename, mode='a', encoding=None, owner=None):
@@ -72,6 +69,13 @@ def getArgs():
 				[macSanitize]
 				uglies = "|\\\:*?<>
 				replacement = _
+				folder skiplist = .AppleDouble
+				file skiplist =
+
+			Shown values are the defaults, list delimiter is a comma(,)
+			certain characters in uglies like a backslash(\\) or square
+			brackets([]) must be escaped, as they are compiled into a
+			regular expression.
 			'''),
 		)
 
@@ -222,6 +226,12 @@ def setupLogging():
 		logger.addHandler(f_handler)
 
 
+def getConfigList(config, sect, opt):
+
+	opt_str = config.get(sect, opt)
+	return [ e.strip() for e in opt_str.split(list_delim) ]
+
+
 def getConfig(configfile):
 
 	global config
@@ -230,6 +240,8 @@ def getConfig(configfile):
 	global re_uglies
 	global re_filename
 	global replacement
+	global folder_skiplist
+	global file_skiplist
 
 	config = configparser.ConfigParser()
 
@@ -248,7 +260,7 @@ def getConfig(configfile):
 
 	# get uglies
 	try:
-		u = config['macSanitize']['uglies']
+		u = config.get('macSanitize', 'uglies')
 
 		try:
 			re_uglies = re.compile('([{0}]+)'.format(u))
@@ -258,18 +270,35 @@ def getConfig(configfile):
 			logger.error('Failed to compile uglies regex from config')
 			sys.exit(1)
 
-	except KeyError:
-		logger.debug('using default uglies: "|\\:*?<>')
+	except configparser.Error as e:
+		logger.debug('{0} - using default uglies: "|\\:*?<>'.format(e))
 		re_uglies = re.compile(uglies)
 
 	# get replacement character
 	try:
-		replacement = config['macSanitize']['replacement']
+		replacement = config.get('macSanitize', 'replacement')
 		logger.info('using replacement character from config: {0}'.format(replacement))
 
-	except KeyError:
-		logger.debug('using default replacement character: _')
+	except configparser.Error as e:
+		logger.debug('{0} - using default replacement character: _'.format(e))
 		replacement = '_'
+
+	# get skiplists
+	try:
+		folder_skiplist = getConfigList(config, 'macSanitize', 'folder skiplist')
+		logger.info('using folder skiplist from config: {0}'.format(folder_skiplist))
+
+	except configparser.Error as e:
+		folder_skiplist = ['.AppleDouble', ]
+		logger.debug('{0} - using default folder skiplist {1}'.format(e, folder_skiplist))
+
+	try:
+		file_skiplist = getConfigList(config, 'macSanitize', 'file skiplist')
+		logger.info('using file skiplist from config: {0}'.format(file_skiplist))
+
+	except configparser.Error as e:
+		file_skiplist = []
+		logger.debug('{0} - using default file skiplist {1}'.format(e, file_skiplist))
 
 	# compile regular expressions
 	re_l_space = re.compile(l_space)
@@ -446,12 +475,6 @@ if __name__ == '__main__':
 
 	# read config file if existent
 	getConfig(args.configfile)
-
-	folder_skiplist = (
-		'.AppleDouble',
-	)
-
-	file_skiplist = ()
 
 	# walk trough the path structure
 	for fob in os.walk(args.workpath):
