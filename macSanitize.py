@@ -31,6 +31,7 @@ import pwd, grp
 
 # TODO: implement parameters for:
 # extension_length = 6
+# TODO: statistics
 
 # reqular expressions
 l_space = r'^(\s+).*$'
@@ -433,8 +434,7 @@ def fileRename(fob, fn, dn, file=True):
 		f_match = None
 		t = 'directory'
 
-	fob_list = fob[ln]
-	sn = fob_list[fn]
+	sn = fob[ln][fn]
 	bpath = fob[0]
 
 	try:
@@ -447,7 +447,7 @@ def fileRename(fob, fn, dn, file=True):
 
 	while True:
 		dn_new = '.'.join(dn_lst_new)
-		if dn_new in fob_list:
+		if dn_new in fob[1] + fob[2]:
 			dn_lst_new[0] = dn_lst[0] + str(count)
 			count += 1
 		else:
