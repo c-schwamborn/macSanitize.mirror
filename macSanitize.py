@@ -69,12 +69,12 @@ def getArgs():
 		description=textwrap.dedent('''\
 			macSanitize will help you to remove characters from file or
 			directory names that violates the smb standard and will
-			therfore result in empty directories or being invisible when
+			therefore result in empty directories or being invisible when
 			shared by samba.
 			It can also remove leading/trailing spaces also causing files
-			and directories not as expected.
+			and directories not behaving as expected.
 			Most common cause for those names, are file and directoy
-			originating on Apple computers, as those system allow anything
+			originating on Apple computers, as those systems allow anything
 			ugly in file names.
 			Unwanted characters are replaced by an underscore(_) and
 			leading/trailing spaces are simply stripped.
