@@ -39,7 +39,7 @@ adminuser@<servername_or_ip>:/some/path/shared/. \
 
 Optionally, but in my opinion useless as you have to set permissions and ownership after the transfer anyways, some use the parameter *\--executability* .
 
-Don't use *\--xattrs* as some suggest. In my experience this is just cause for lots of errors with no benefit. Copying the extended attributes often fail as the Apple attributes won't fit into the attribute space your Linux system, depending on your used filesystem. Furthermore most of the information is structured Mac specific and Samba doesn't recognize them anyway as it does its own usage of extended attributes.
+Don't use *\--xattrs* as some suggest. In my experience this is just cause for lots of errors clouding real errors with no benefit. Copying the extended attributes often fail as the Apple attributes won't fit into the attribute space your Linux system, depending on your used filesystem. Furthermore most of the information is structured Mac specific and Samba doesn't recognize them anyway as it does its own usage of extended attributes.
 
 Depending on the system you are performing the copy from, use *iconv=utf-8,utf-8-mac* if you initiate the copy process from the Linux system and *iconv=utf-8-mac,utf-8* if you are copying from the Mac side. The coding order has nothing to do with the copy direction, but it defines the local and remote filesystem encoding. So Linux is allways *utf-8* and Mac is *utf-8-mac* .
 
