@@ -47,7 +47,7 @@ The option *\--rsync-path* is needed to specify the correct rsync on the mac sid
 
 You just need to adjust permissions and ownership afterwards i.e.:
 
-```
+```shell
 chown --recursive <somename> /new/path/shared
 chgrp --recursive <somegroup> /new/path/shared
 find /new/path/shared -type d -print0 | xargs -0 chmod 2770
@@ -67,14 +67,69 @@ There is a built-in feature preventing name conflicts that might result from ren
 
 Example command to do the above on directories and files:
 
-```
+```shell
 macSanitize.py -f -d -l -t -e -u /path/to/sanitize/
 ```
 
 To get more options and some help, call the script with *\--help* .
 
-```
+```shell
 ./macSanitize.py --help
+usage: macSanitize.py [-h] [-f] [-d] [-l] [-t] [-e] [-u] [-v] [-q] [--dryrun] [--logfile <log file>] [-c <config file>] [-p] [-s] <path to process>
+
+macSanitize will help you to remove characters from file or
+directory names that violates the smb standard and will
+therefore result in empty directories or being invisible when
+shared by samba.
+It can also remove leading/trailing spaces also causing files
+and directories not behaving as expected.
+Most common cause for those names, are file and directoy
+originating on Apple computers, as those systems allow anything
+ugly in file names.
+Unwanted characters are replaced by an underscore(_) and
+leading/trailing spaces are simply stripped.
+To avoid conflicts a number index is appended if the resulting
+file already exists in the current directory. The index is
+appended before the file extension. The file extension is
+detected by a dot(.) followed by 1 to 6 alphanumeric
+characters.
+
+positional arguments:
+  <path to process>     given path will be processed for sanatizing names
+
+options:
+  -h, --help            show this help message and exit
+  -f, --files           process file objects at the given work directory
+  -d, --directories     process directory objects at the given work directory
+  -l, --leading         strip leading spaces from file/directory names
+  -t, --trailing        strip trailing spaces from file/directory names
+  -e, --extension       strip spaces before and after the file extension dot
+  -u, --uglies          replace ugly characters with underscores
+  -v, --verbose         get verbose output from the logger
+  -q, --quiet           supress console output except errors
+  --dryrun              perform a dry run without actually changing anything
+  --logfile <log file>  a log file to use
+  -c <config file>, --config <config file>
+                        a config file to use
+  -p, --parameters      dump cli parameters and exit
+  -s, --stats           show statistics on modifications
+
+Example:
+	macSanitize.py -f -d -l -t -e -u /path/to/sanitize/
+
+Config example (default file: /etc/macSanitize.ini)
+
+	[macSanitize]
+	uglies = "|\\:*?<>
+	replacement = _
+	folder skiplist = ,.AppleDouble
+	file skiplist =
+
+Shown values are the defaults, the list delimiter is the first
+character found on the value side of the list parameter.
+Certain characters in uglies like a backslash(\) or square
+brackets([]) must be escaped, as they are compiled into a
+regular expression.
 ```
 
 I strongly advise to backup your data, test the process on snapshots first, or at least do a dry run ( *\--dryrun* ) before starting the actually renaming process.
