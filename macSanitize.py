@@ -31,7 +31,6 @@ import pwd, grp
 
 # TODO: implement parameters for:
 # extension_length = 6
-# TODO: statistics
 
 # reqular expressions
 l_space = r'^(\s+).*$'
