@@ -39,6 +39,14 @@ t_space = r'^.*[^\s](\s+)$'
 uglies = r'(["|\\:*?<>]+)'
 filename = r'^(.*[^.])\.(\s*\w{1,6})$'
 
+# statistic counters
+mod = False
+ntotal = [0, 0, 0]
+nren = [0, 0, 0]
+nmod = [0, 0, 0]
+nskip = [0, 0, 0]
+nfail = [0, 0, 0]
+
 
 def ownedFileHandler(filename, mode='a', encoding=None, owner=None):
 
@@ -206,6 +214,15 @@ def getArgs():
 		)
 
 	parser.add_argument(
+		'-s', '--stats',
+		dest = 'stats',
+		action = 'store_true',
+		required = False,
+		default = False,
+		help = 'show statistics on modifications',
+		)
+
+	parser.add_argument(
 		dest = 'workpath',
 		metavar = '<path to process>',
 		help = 'given path will be processed for sanatizing names'
@@ -330,6 +347,7 @@ def getConfig(configfile):
 
 def doNameList(fob, skiplist, file=True):
 
+	global mod
 	bpath = fob[0]
 
 	# work on a copy in dryrun, but descend the original
@@ -349,12 +367,16 @@ def doNameList(fob, skiplist, file=True):
 
 	for fn in range(0, len(fob[ln])):
 
+		mod = False
+		ntotal[ln] += 1
+
 		# skip elements in list
 		sn = fob_a[ln][fn]
 		if sn in skiplist:
 			logger.debug("skipping {0}: '{1}'".format(t, os.path.join(bpath, sn)))
 			del fob_a[ln][fn]
-			if args.dryrun: fob[ln][fn]
+			if args.dryrun: del fob[ln][fn]
+			nskip[ln] += 1
 			continue
 
 		# remove leading spaces
@@ -389,7 +411,9 @@ def doNameList(fob, skiplist, file=True):
 				fileRename(fob_a, fn, dn, file)
 
 		# continue loop here for directories as they don't have file extensions
-		if not file: continue
+		if not file:
+			if mod: nren[ln] += 1
+			continue
 
 		# remove extension spaces
 		if not args.ext_space: continue
@@ -422,8 +446,12 @@ def doNameList(fob, skiplist, file=True):
 				logger.debug("space lengh: {0}".format(sl))
 				fileRename(fob_a, fn, dn, file)
 
+		if mod: nren[ln] += 1
+
 
 def fileRename(fob, fn, dn, file=True):
+
+	global mod
 
 	if file:
 		ln = 2
@@ -471,9 +499,12 @@ def fileRename(fob, fn, dn, file=True):
 			except:
 				logger.error("failed to rename {0} '{1}' to '{2}'")
 				ren = False
+				nfail[ln] += 1
 
 	if ren:
 		fob[ln][fn] = dn_new
+		mod = True
+		nmod[ln] += 1
 
 
 if __name__ == '__main__':
@@ -505,4 +536,17 @@ if __name__ == '__main__':
 
 		if args.process_dirs:
 			doNameList(fob, folder_skiplist, False)
+
+	if args.stats:
+		logger.info('Statistics --------------------')
+		logger.info('dir total:         {0}'.format(ntotal[1]))
+		logger.info('dir skip:          {0}'.format(nskip[1]))
+		logger.info('dir modification:  {0}'.format(nmod[1]))
+		logger.info('dir mod failed:    {0}'.format(nfail[1]))
+		logger.info('dir renamed:       {0}'.format(nren[1]))
+		logger.info('file total:        {0}'.format(ntotal[2]))
+		logger.info('file skip :        {0}'.format(nskip[2]))
+		logger.info('file modification: {0}'.format(nmod[2]))
+		logger.info('file mod failed:   {0}'.format(nfail[2]))
+		logger.info('file renamed:      {0}'.format(nren[2]))
 
