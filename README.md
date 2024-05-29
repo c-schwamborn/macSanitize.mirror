@@ -56,7 +56,7 @@ find /new/path/shared -type f -print0 | xargs -0 chmod 660
 
 #### Usage and technical details
 
-I wrote this in python and kept the code simple so anyone should be able to adjust things if needed. Everything used should be contained in the python standard library, so if you have python 3 you should be good to go.
+I wrote this in python and kept the code simple so anyone should be able to adjust things if needed. Everything used should be contained in the python standard library, so if you have python 3 you are good to go.
 
 The script can do the following things for you:
 
