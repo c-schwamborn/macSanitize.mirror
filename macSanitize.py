@@ -517,11 +517,11 @@ def fileRename(fob, fn, dn, file=True):
 	try:
 		dn_lst = f_match.groups()
 	except AttributeError:
-		dn_lst = [dn, ]
+		dn_lst = [dn, '.']
 
 	count = 1
 	dn_lst_new = list(dn_lst)
-	if len(dn_lst_new) == 3: del(dn_lst_new[1])
+	del(dn_lst_new[1])
 
 	while True:
 		dn_new = dn_lst[1].join(dn_lst_new)
