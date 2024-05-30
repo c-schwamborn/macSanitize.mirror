@@ -64,6 +64,8 @@ The script can do the following things for you:
 2. Remove trailing spaces from names.
 3. Remove leading spaces from names. Not necessary, but not very useful either and often cause for confusion, since the automatic listing order might be off without an obvious reason.
 4. Remove spaces around the extension dot(.) after the base file (quiet often case) name and leading the actual extension (unlikely but it occurs).
+5. Remove superfluous additional extension dots(.) if there is more than one dot separating the extension (harmless but useless).
+6. Remove trailing dots(.) wihout an extension following. Seems ok in most cases, but it's contradicting the SMB standard.
 
 There is a built-in feature preventing name conflicts that might result from renaming or stripping away spaces. If an already existing name is discovered, a numeric index is appended to the name, in case of files before the extension.
 
@@ -77,7 +79,7 @@ To get more options and some help, call the script with *\--help* .
 
 ```shell
 ./macSanitize.py --help
-usage: macSanitize.py [-h] [-f] [-d] [-l] [-t] [-e] [-u] [-v] [-q] [--dryrun] [--logfile <log file>] [-c <config file>] [-p] [-s] <path to process>
+usage: macSanitize.py [-h] [-f] [-d] [-l] [-t] [-e] [-x] [-m] [-u] [-v] [-q] [--dryrun] [--logfile <log file>] [-c <config file>] [-p] [-s] <path to process>
 
 macSanitize will help you to remove characters from file or
 directory names that violates the smb standard and will
@@ -106,6 +108,8 @@ options:
   -l, --leading         strip leading spaces from file/directory names
   -t, --trailing        strip trailing spaces from file/directory names
   -e, --extension       strip spaces before and after the file extension dot
+  -x, --xdots           remove concluding dots from names without extension
+  -m, --multidots       remove more than one superfluous extension dots
   -u, --uglies          replace ugly characters with underscores
   -v, --verbose         get verbose output from the logger
   -q, --quiet           supress console output except errors
@@ -135,6 +139,12 @@ regular expression.
 ```
 
 I strongly advise to backup your data, test the process on snapshots first, or at least do a dry run ( *\--dryrun* ) before starting the actually renaming process.
+
+#### Windows names and SMB
+
+Some thoughts about Windows, file and directory names, it's file system and SMB:
+
+Although NTFS can hadle some of the name characteristics this script removes, SMB in general does not (depending in parts on the SMB version). There is a surprising inconsistency within the Windows system, as you can create files on the command shell, the file explorer won't and doesn't even show, which are in the end impossible to copy onto SMB shares. Further more astonishing is the fact, that even Microsofts own servers seem to disregard some of their own SMB standards, Samba servers do respect. So for compatibility reasons those names should be avoided especially in mixed environments where Apple and Windows systems share data. The confusion around this matter is reflected by the many discussions across the net, including Samba's bug tracker, where those issues pop up on occasion especially in connection with vfs_fruit.
 
 #### Issues
 

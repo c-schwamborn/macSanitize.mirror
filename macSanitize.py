@@ -36,7 +36,8 @@ import pwd, grp
 l_space = r'^(\s+).*$'
 t_space = r'^.*[^\s](\s+)$'
 uglies = r'(["|\\:*?<>]+)'
-filename = r'^(.*[^.])\.(\s*\w{1,6})$'
+filename = r'^(.*[^.])(\.+)(\s*\w{1,6})$'
+t_dots = r'^.*[^.](\.+)$'
 
 # statistic counters
 mod = False
@@ -147,6 +148,24 @@ def getArgs():
 		required = False,
 		default = False,
 		help = 'strip spaces before and after the file extension dot',
+		)
+
+	parser.add_argument(
+		'-x', '--xdots',
+		dest = 'trailing_dots',
+		action = 'store_true',
+		required = False,
+		default = False,
+		help = 'remove concluding dots from names without extension',
+		)
+
+	parser.add_argument(
+		'-m', '--multidots',
+		dest = 'multi_dots',
+		action = 'store_true',
+		required = False,
+		default = False,
+		help = 'remove more than one superfluous extension dots',
 		)
 
 	parser.add_argument(
@@ -277,6 +296,7 @@ def getConfig(configfile):
 	global re_t_space
 	global re_uglies
 	global re_filename
+	global re_t_dots
 	global replacement
 	global folder_skiplist
 	global file_skiplist
@@ -342,6 +362,7 @@ def getConfig(configfile):
 	re_l_space = re.compile(l_space)
 	re_t_space = re.compile(t_space)
 	re_filename = re.compile(filename)
+	re_t_dots = re.compile(t_dots)
 
 
 def doNameList(fob, skiplist, file=True):
@@ -409,10 +430,36 @@ def doNameList(fob, skiplist, file=True):
 				logger.debug("ugly character in {0}: '{1}'".format(t, os.path.join(bpath, sn)))
 				fileRename(fob_a, fn, dn, file)
 
+		# remove trailing dots
+		if args.trailing_dots:
+			sn = fob_a[ln][fn]
+			f_match = re_t_dots.fullmatch(sn)
+			if f_match:
+				sl = len(f_match.groups()[0])
+				dn = sn[:-sl]
+				logger.debug("trailing dots in {0}: '{1}'".format(t, os.path.join(bpath, sn)))
+				logger.debug("dots lengh: {0}".format(sl))
+				fileRename(fob_a, fn, dn, file)
+
 		# continue loop here for directories as they don't have file extensions
 		if not file:
-			if mod: nren[ln] += 1
+			if mod:
+				nren[ln] += 1
+			else:
+				logger.debug("nothing to change on directory: {0}".format(fob_a[ln][fn]))
 			continue
+
+		# remove more than one superfluous extension dots
+		if args.multi_dots:
+			sn = fob_a[ln][fn]
+			f_match = re_filename.fullmatch(sn)
+			if f_match:
+				sn_lst = f_match.groups()
+				if len(sn_lst[1]) > 1:
+					dn = '.'.join( [sn_lst[0], sn_lst[2],] )
+					logger.debug("multiple extension dots found in {0}: '{1}'".format(t, os.path.join(bpath, sn)))
+					logger.debug("number of dots: {0}".format(len(sn_lst[1])))
+					fileRename(fob_a, fn, dn, file)
 
 		# remove extension spaces
 		if not args.ext_space: continue
@@ -426,7 +473,7 @@ def doNameList(fob, skiplist, file=True):
 			f_match2 = re_t_space.fullmatch(sn_lst[0])
 			if f_match2:
 				sl = len(f_match2.groups()[0])
-				dn = '.'.join( [sn_lst[0][:-sl], sn_lst[1],] )
+				dn = sn_lst[1].join( [sn_lst[0][:-sl], sn_lst[2],] )
 				logger.debug("trailing base name space in {0}: '{1}'".format(t, os.path.join(bpath, sn)))
 				logger.debug("space lengh: {0}".format(sl))
 				fileRename(fob_a, fn, dn, file)
@@ -437,15 +484,18 @@ def doNameList(fob, skiplist, file=True):
 		if f_match:
 			# remove spaces leading the extension after the dot
 			sn_lst = f_match.groups()
-			f_match2 = re_l_space.fullmatch(sn_lst[1])
+			f_match2 = re_l_space.fullmatch(sn_lst[2])
 			if f_match2:
 				sl = len(f_match2.groups()[0])
-				dn = '.'.join( [sn_lst[0], sn_lst[1][sl:],] )
+				dn = sn_lst[1].join( [sn_lst[0], sn_lst[2][sl:],] )
 				logger.debug("leading extension space in {0}: '{1}'".format(t, os.path.join(bpath, sn)))
 				logger.debug("space lengh: {0}".format(sl))
 				fileRename(fob_a, fn, dn, file)
 
-		if mod: nren[ln] += 1
+		if mod:
+			nren[ln] += 1
+		else:
+			logger.debug("nothing to change on file: {0}".format(fob_a[ln][fn]))
 
 
 def fileRename(fob, fn, dn, file=True):
@@ -471,9 +521,10 @@ def fileRename(fob, fn, dn, file=True):
 
 	count = 1
 	dn_lst_new = list(dn_lst)
+	if len(dn_lst_new) == 3: del(dn_lst_new[1])
 
 	while True:
-		dn_new = '.'.join(dn_lst_new)
+		dn_new = dn_lst[1].join(dn_lst_new)
 		if dn_new in fob[1] + fob[2]:
 			dn_lst_new[0] = dn_lst[0] + str(count)
 			count += 1
