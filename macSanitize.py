@@ -540,7 +540,7 @@ def fileRename(fob, fn, dn, file=True):
 
 	fsn = os.path.join(bpath, sn)
 	fdn = os.path.join(bpath, dn_new)
-	logger.info("renaming {0} '{1}' to '{2}'".format(t, fsn, fdn))
+	logger.info("renaming {0} {1} to {2}".format(t, fsn.encode(), fdn.encode()))
 
 	ren = True
 	if not args.dryrun:
