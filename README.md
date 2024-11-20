@@ -8,7 +8,7 @@ If you are migrating Apple servers towards Linux/Samba file servers, or switch y
 
 The main causes for those issues are two things:
 
-First, is the data comes from a Mac server, you have to overcome the name encoding difference between Apple and the rest of the world.
+First, if the data comes from a Mac server, you have to overcome the name encoding difference between Apple and the rest of the world.
 
 Second, as Mac allows any character in its folder and file names, you need to sanitize your file structure, since Samba follows the SMB naming specifications, whereas AFP and Apples SMB implementation allows any sort of ugly stuff besides certain characters, like spaces at the beginning and ending of a folder or filename.  
 On a Windows machine those spaces are stripped upon creation and never exist on disk, but Macs do create them. Actually quite often, even if the users create them on purpose. They just appear, most common by accidentally copying something (with a space at the end) for the filename.
