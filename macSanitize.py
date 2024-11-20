@@ -385,7 +385,8 @@ def doNameList(fob, skiplist, file=True):
 		ln = 1
 		t = 'directory'
 
-	for fn in range(0, len(fob[ln])):
+	fn = 0
+	while fn < len(fob[ln]):
 
 		mod = False
 		ntotal[ln] += 1
@@ -397,6 +398,8 @@ def doNameList(fob, skiplist, file=True):
 			del fob_a[ln][fn]
 			if args.dryrun: del fob[ln][fn]
 			nskip[ln] += 1
+			# don't add to fn as we just removed that item from the list and continue
+			# with the next item now heaving the position of the removed one
 			continue
 
 		# remove leading spaces
@@ -447,6 +450,8 @@ def doNameList(fob, skiplist, file=True):
 				nren[ln] += 1
 			else:
 				logger.debug("nothing to change on directory: {0}".format(fob_a[ln][fn]))
+
+			fn += 1
 			continue
 
 		# remove more than one superfluous extension dots
@@ -462,40 +467,42 @@ def doNameList(fob, skiplist, file=True):
 					fileRename(fob_a, fn, dn, file)
 
 		# remove extension spaces
-		if not args.ext_space: continue
+		if args.ext_space:
 
-		sn = fob_a[ln][fn]
-		f_match = re_filename.fullmatch(sn)
+			sn = fob_a[ln][fn]
+			f_match = re_filename.fullmatch(sn)
 
-		if f_match:
-			# remove trailing spaces in file base name before the extension dot
-			sn_lst = f_match.groups()
-			f_match2 = re_t_space.fullmatch(sn_lst[0])
-			if f_match2:
-				sl = len(f_match2.groups()[0])
-				dn = sn_lst[1].join( [sn_lst[0][:-sl], sn_lst[2],] )
-				logger.debug("trailing base name space in {0}: '{1}'".format(t, os.path.join(bpath, sn)))
-				logger.debug("space lengh: {0}".format(sl))
-				fileRename(fob_a, fn, dn, file)
+			if f_match:
+				# remove trailing spaces in file base name before the extension dot
+				sn_lst = f_match.groups()
+				f_match2 = re_t_space.fullmatch(sn_lst[0])
+				if f_match2:
+					sl = len(f_match2.groups()[0])
+					dn = sn_lst[1].join( [sn_lst[0][:-sl], sn_lst[2],] )
+					logger.debug("trailing base name space in {0}: '{1}'".format(t, os.path.join(bpath, sn)))
+					logger.debug("space lengh: {0}".format(sl))
+					fileRename(fob_a, fn, dn, file)
 
-		sn = fob_a[ln][fn]
-		f_match = re_filename.fullmatch(sn)
+			sn = fob_a[ln][fn]
+			f_match = re_filename.fullmatch(sn)
 
-		if f_match:
-			# remove spaces leading the extension after the dot
-			sn_lst = f_match.groups()
-			f_match2 = re_l_space.fullmatch(sn_lst[2])
-			if f_match2:
-				sl = len(f_match2.groups()[0])
-				dn = sn_lst[1].join( [sn_lst[0], sn_lst[2][sl:],] )
-				logger.debug("leading extension space in {0}: '{1}'".format(t, os.path.join(bpath, sn)))
-				logger.debug("space lengh: {0}".format(sl))
-				fileRename(fob_a, fn, dn, file)
+			if f_match:
+				# remove spaces leading the extension after the dot
+				sn_lst = f_match.groups()
+				f_match2 = re_l_space.fullmatch(sn_lst[2])
+				if f_match2:
+					sl = len(f_match2.groups()[0])
+					dn = sn_lst[1].join( [sn_lst[0], sn_lst[2][sl:],] )
+					logger.debug("leading extension space in {0}: '{1}'".format(t, os.path.join(bpath, sn)))
+					logger.debug("space lengh: {0}".format(sl))
+					fileRename(fob_a, fn, dn, file)
 
 		if mod:
 			nren[ln] += 1
 		else:
 			logger.debug("nothing to change on file: {0}".format(fob_a[ln][fn]))
+
+		fn += 1
 
 
 def fileRename(fob, fn, dn, file=True):
