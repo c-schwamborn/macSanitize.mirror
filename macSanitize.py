@@ -269,7 +269,11 @@ def setupLogging():
 
 	# log to file if logfile parameter is given
 	if args.logfile:
-		f_handler = ownedFileHandler(args.logfile, mode='w', encoding=log_encoding)
+		try:
+			f_handler = ownedFileHandler(args.logfile, mode='w', encoding=log_encoding)
+		except PermissionError:
+			logger.error('Failed to open log file \'{0}\' for writing'.format(args.logfile))
+			sys.exit(1)
 		f_formatter = logging.Formatter('[%(levelname)s] %(message)s')
 		f_handler.setFormatter(f_formatter)
 		if args.verbose:
@@ -309,7 +313,7 @@ def getConfig(configfile):
 			config.read(configfile)
 
 		elif os.path.exists('/etc/macSanitize.ini'):
-			logger.info('Reading config file: {0}'.format(configfile))
+			logger.info('Reading config file: {0}'.format('/etc/macSanitize.ini'))
 			config.read('/etc/macSanitize.ini')
 
 	except configparser.Error as e:
