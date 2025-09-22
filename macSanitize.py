@@ -554,7 +554,7 @@ def fileRename(fob, fn, dn, file=True):
 			try:
 				os.rename(fsn, fdn)
 			except:
-				logger.error("failed to rename {0} '{1}' to '{2}'")
+				logger.error("failed to rename {0} '{1}' to '{2}'".format(t, fsn, fdn))
 				ren = False
 				nfail[ln] += 1
 
