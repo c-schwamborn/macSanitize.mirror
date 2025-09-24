@@ -196,6 +196,15 @@ def getArgs():
 		)
 
 	parser.add_argument(
+		'--linebreak',
+		dest = 'linebreak',
+		action = 'store_true',
+		required = False,
+		default = False,
+		help = 'printing file/directory object names in new lines',
+		)
+
+	parser.add_argument(
 		'--dryrun',
 		dest = 'dryrun',
 		action = 'store_true',
@@ -544,7 +553,12 @@ def fileRename(fob, fn, dn, file=True):
 
 	fsn = os.path.join(bpath, sn)
 	fdn = os.path.join(bpath, dn_new)
-	logger.info("renaming {0} {1} to {2}".format(t, fsn.encode(), fdn.encode()))
+	if args.linebreak:
+		logger.info("renaming {0}:".format(t))
+		logger.info("  {0} to".format(fsn.encode()))
+		logger.info("  {0}".format(fdn.encode()))
+	else:
+		logger.info("renaming {0} {1} to {2}".format(t, fsn.encode(), fdn.encode()))
 
 	ren = True
 	if not args.dryrun:
